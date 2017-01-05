@@ -74,7 +74,10 @@ UIViewAnimationOptions const SSWNavigationTransitionCurve = 7 << 16;
     BOOL tabBarControllerContainsToViewController = [tabBarController.viewControllers containsObject:toViewController];
     BOOL tabBarControllerContainsNavController = [tabBarController.viewControllers containsObject:navController];
     BOOL isToViewControllerFirstInNavController = [navController.viewControllers firstObject] == toViewController;
-    if (tabBar && (tabBarControllerContainsToViewController || (isToViewControllerFirstInNavController && tabBarControllerContainsNavController))) {
+    
+    BOOL fromVCHidesBottomBar = fromViewController.view.frame.size.height > toViewController.view.frame.size.height;
+    
+    if (fromVCHidesBottomBar && tabBar && (tabBarControllerContainsToViewController || (isToViewControllerFirstInNavController && tabBarControllerContainsNavController))) {
         [tabBar.layer removeAllAnimations];
         
         CGRect tabBarRect = tabBar.frame;
