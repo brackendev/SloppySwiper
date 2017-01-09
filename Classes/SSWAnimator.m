@@ -66,18 +66,17 @@ UIViewAnimationOptions const SSWNavigationTransitionCurve = 7 << 16;
     
     // fix hidesBottomBarWhenPushed not animated properly
     UITabBarController *tabBarController = toViewController.tabBarController;
-    UINavigationController *navController = toViewController.navigationController;
+//    UINavigationController *navController = toViewController.navigationController;
     UITabBar *tabBar = tabBarController.tabBar;
     
-    BOOL shouldAddTabBarBackToTabBarController = NO;
-    
-    BOOL tabBarControllerContainsToViewController = [tabBarController.viewControllers containsObject:toViewController];
-    BOOL tabBarControllerContainsNavController = [tabBarController.viewControllers containsObject:navController];
-    BOOL isToViewControllerFirstInNavController = [navController.viewControllers firstObject] == toViewController;
+//    BOOL tabBarControllerContainsToViewController = [tabBarController.viewControllers containsObject:toViewController];
+//    BOOL tabBarControllerContainsNavController = [tabBarController.viewControllers containsObject:navController];
+//    BOOL isToViewControllerFirstInNavController = [navController.viewControllers firstObject] == toViewController;
     
     BOOL fromVCHidesBottomBar = fromViewController.view.frame.size.height > toViewController.view.frame.size.height;
+    BOOL shouldAddTabBarBackToTabBarController = (fromVCHidesBottomBar && tabBar);
     
-    if (fromVCHidesBottomBar && tabBar && (tabBarControllerContainsToViewController || (isToViewControllerFirstInNavController && tabBarControllerContainsNavController))) {
+    if (shouldAddTabBarBackToTabBarController) {
         [tabBar.layer removeAllAnimations];
         
         CGRect tabBarRect = tabBar.frame;
