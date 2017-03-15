@@ -5,17 +5,21 @@
 //
 
 #import "SSWAnimator.h"
+#import "SSWDirectionalPanGestureRecognizer.h"
 
 UIViewAnimationOptions const SSWNavigationTransitionCurve = 7 << 16;
 
 
 @implementation UIView (TransitionShadow)
-- (void)addLeftSideShadowWithFading
+- (void)addLeftSideShadowWithFading:(BOOL)rightToLeft
 {
     CGFloat shadowWidth = 4.0f;
     CGFloat shadowVerticalPadding = -20.0f; // negative padding, so the shadow isn't rounded near the top and the bottom
     CGFloat shadowHeight = CGRectGetHeight(self.frame) - 2 * shadowVerticalPadding;
     CGRect shadowRect = CGRectMake(-shadowWidth, shadowVerticalPadding, shadowWidth, shadowHeight);
+    if (rightToLeft) {
+        shadowRect = CGRectMake(self.bounds.size.width, shadowVerticalPadding, shadowWidth, shadowHeight);
+    }
     UIBezierPath *shadowPath = [UIBezierPath bezierPathWithRect:shadowRect];
     self.layer.shadowPath = [shadowPath CGPath];
     self.layer.shadowOpacity = 0.2f;
@@ -51,11 +55,20 @@ UIViewAnimationOptions const SSWNavigationTransitionCurve = 7 << 16;
     [[transitionContext containerView] insertSubview:toViewController.view belowSubview:fromViewController.view];
     
     // parallax effect; the offset matches the one used in the pop animation in iOS 7.1
-    CGFloat toViewControllerXTranslation = - CGRectGetWidth([transitionContext containerView].bounds) * 0.3f;
+    __block BOOL isRightToLeft = NO;
+    
+    [[[[fromViewController navigationController] view] gestureRecognizers] enumerateObjectsUsingBlock:^(__kindof UIGestureRecognizer *obj, NSUInteger idx, BOOL *stop) {
+        if ([obj isKindOfClass:[SSWDirectionalPanGestureRecognizer class]]
+            && ((SSWDirectionalPanGestureRecognizer *)obj).direction == SSWPanDirectionLeft) {
+            isRightToLeft = YES;
+            *stop = YES;
+        }
+    }];
+    CGFloat toViewControllerXTranslation = (isRightToLeft ? 1 : -1) * CGRectGetWidth([transitionContext containerView].bounds) * 0.3f;
     toViewController.view.transform = CGAffineTransformMakeTranslation(toViewControllerXTranslation, 0);
     
     // add a shadow on the left side of the frontmost view controller
-    [fromViewController.view addLeftSideShadowWithFading];
+    [fromViewController.view addLeftSideShadowWithFading:isRightToLeft];
     BOOL previousClipsToBounds = fromViewController.view.clipsToBounds;
     fromViewController.view.clipsToBounds = NO;
     
@@ -66,12 +79,12 @@ UIViewAnimationOptions const SSWNavigationTransitionCurve = 7 << 16;
     
     // fix hidesBottomBarWhenPushed not animated properly
     UITabBarController *tabBarController = toViewController.tabBarController;
-//    UINavigationController *navController = toViewController.navigationController;
+    //    UINavigationController *navController = toViewController.navigationController;
     UITabBar *tabBar = tabBarController.tabBar;
     
-//    BOOL tabBarControllerContainsToViewController = [tabBarController.viewControllers containsObject:toViewController];
-//    BOOL tabBarControllerContainsNavController = [tabBarController.viewControllers containsObject:navController];
-//    BOOL isToViewControllerFirstInNavController = [navController.viewControllers firstObject] == toViewController;
+    //    BOOL tabBarControllerContainsToViewController = [tabBarController.viewControllers containsObject:toViewController];
+    //    BOOL tabBarControllerContainsNavController = [tabBarController.viewControllers containsObject:navController];
+    //    BOOL isToViewControllerFirstInNavController = [navController.viewControllers firstObject] == toViewController;
     
     BOOL fromVCHidesBottomBar = fromViewController.view.frame.size.height > toViewController.view.frame.size.height;
     BOOL shouldAddTabBarBackToTabBarController = (fromVCHidesBottomBar && tabBar);
@@ -94,7 +107,7 @@ UIViewAnimationOptions const SSWNavigationTransitionCurve = 7 << 16;
     [UIView animateWithDuration:[self transitionDuration:transitionContext] delay:0 options:UIViewAnimationOptionTransitionNone | curveOption animations:^{
         toViewController.view.transform = CGAffineTransformIdentity;
         tabBar.transform = CGAffineTransformIdentity;
-        fromViewController.view.transform = CGAffineTransformMakeTranslation(toViewController.view.frame.size.width, 0);
+        fromViewController.view.transform = CGAffineTransformMakeTranslation((isRightToLeft ? -1 : 1) * toViewController.view.frame.size.width, 0);
         dimmingView.alpha = 0.0f;
         
     } completion:^(BOOL finished) {

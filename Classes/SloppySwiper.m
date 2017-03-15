@@ -30,13 +30,13 @@
 - (instancetype)initWithNavigationController:(UINavigationController *)navigationController
 {
     NSCParameterAssert(!!navigationController);
-
+    
     self = [super init];
     if (self) {
         _navigationController = navigationController;
         [self commonInit];
     }
-
+    
     return self;
 }
 
@@ -53,7 +53,7 @@
     panRecognizer.delegate = self;
     [_navigationController.view addGestureRecognizer:panRecognizer];
     _panRecognizer = panRecognizer;
-
+    
     _animator = [[SSWAnimator alloc] init];
 }
 
@@ -66,16 +66,22 @@
         if (self.navigationController.viewControllers.count > 1 && !self.duringAnimation) {
             self.interactionController = [[UIPercentDrivenInteractiveTransition alloc] init];
             self.interactionController.completionCurve = UIViewAnimationCurveEaseOut;
-
+            
             [self.navigationController popViewControllerAnimated:YES];
         }
     } else if (recognizer.state == UIGestureRecognizerStateChanged) {
         CGPoint translation = [recognizer translationInView:view];
+        
         // Cumulative translation.x can be less than zero because user can pan slightly to the right and then back to the left.
         CGFloat d = translation.x > 0 ? translation.x / CGRectGetWidth(view.bounds) : 0;
+        if ([self isRightToLeftUI]) {
+            d = fabsf(translation.x) > 0 ? fabsf(translation.x) / CGRectGetWidth(view.bounds) : 0;
+        }
+        
         [self.interactionController updateInteractiveTransition:d];
     } else if (recognizer.state == UIGestureRecognizerStateEnded || recognizer.state == UIGestureRecognizerStateCancelled) {
-        if ([recognizer velocityInView:view].x > 0) {
+        if (([self isRightToLeftUI] && [recognizer velocityInView:view].x < 0)
+            || (![self isRightToLeftUI] && [recognizer velocityInView:view].x > 0)) {
             [self.interactionController finishInteractiveTransition];
         } else {
             [self.interactionController cancelInteractiveTransition];
@@ -84,6 +90,11 @@
         }
         self.interactionController = nil;
     }
+}
+
+- (BOOL)isRightToLeftUI {
+    return ([self.panRecognizer isKindOfClass:[SSWDirectionalPanGestureRecognizer class]]
+            && ((SSWDirectionalPanGestureRecognizer *)self.panRecognizer).direction == SSWPanDirectionLeft);
 }
 
 #pragma mark - UIGestureRecognizerDelegate
