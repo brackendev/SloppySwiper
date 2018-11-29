@@ -86,7 +86,6 @@
         if (self.navigationController.viewControllers.count > 1 && !self.duringAnimation) {
             self.interactionController = [[UIPercentDrivenInteractiveTransition alloc] init];
             self.interactionController.completionCurve = UIViewAnimationCurveEaseOut;
-
             [self.navigationController popViewControllerAnimated:YES];
         }
     } else if (recognizer.state == UIGestureRecognizerStateChanged) {
